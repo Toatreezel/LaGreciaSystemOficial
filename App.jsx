@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
 // --- ÍCONES (Placeholders) ---
+// Em produção, considere usar uma biblioteca como 'lucide-react' para melhor performance e consistência.
 const PizzaIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 11h.01"/><path d="M11 15h.01"/><path d="M16 16h.01"/><path d="m2 16 2.24 1.26a4 4 0 0 0 4.02-1.26l1.48-1.48a4 4 0 0 1 5.66 0l1.48 1.48a4 4 0 0 0 4.02 1.26L22 16"/><path d="M5.47 12.53a4 4 0 0 1 0-5.66l1.48-1.48a4 4 0 0 1 5.66 0l1.48 1.48a4 4 0 0 1 0 5.66l-1.48 1.48a4 4 0 0 1-5.66 0Z"/></svg>;
 const HistoryIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>;
 const MenuIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>;
@@ -9,23 +10,25 @@ const ChevronUpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" h
 const IFoodIcon = () => <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 44c11.046 0 20-8.954 20-20S35.046 4 24 4 4 12.954 4 24s8.954 20 20 20Z" fill="#ea1d2c" stroke="#ea1d2c" strokeWidth="4"/><path d="M30.33 13.336H18.014v3.35h7.245v3.313h-7.245v3.35h7.525v3.313h-7.525v6.012h-4.008V13.336h-2v19.338h20.324v-3.313h-7.526v-3.35h7.526v-3.313h-7.245v-3.35h7.245v-2.662Z" fill="#fff"/></svg>;
 const AnotaAiIcon = () => <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 44c11.046 0 20-8.954 20-20S35.046 4 24 4 4 12.954 4 24s8.954 20 20 20Z" fill="#4B89DA" stroke="#4B89DA" strokeWidth="4"/><path d="M24 30a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" fill="#fff" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M34 24a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 
-// --- CONFIGURAÇÕES ---
+// --- CONFIGURAÇÕES GLOBAIS ---
 const PIZZA_DB_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTfCzOXaEqt_r53BtkoAsVKc0CKWP3HaahWi1GPI4k9Ubz14E3exXrdTkTQ68jtiv9lj3QtkmsRlD3E/pub?output=tsv';
-// IMPORTANTE: Substitua pela URL do seu projeto Glitch
-const WEBHOOK_SERVER_URL = 'https://seu-projeto.glitch.me'; // Ex: 'https://nome-aleatorio.glitch.me'
+// IMPORTANTE: Substitua pela URL do seu projeto no Render ou outra plataforma de backend
+const WEBHOOK_SERVER_URL = 'https://lagrecia-webhook.onrender.com'; // Exemplo
 
 const FINALIZATION_INGREDIENTS = ['tomate cofitado', 'manjericão', 'rúcula', 'm&ms', 'coco ralado', 'rapadura', 'chocolate', 'doce de leite', 'paçoca', 'leite condensado'];
 
-// --- COMPONENTES ---
-const ProgressBar = ({ estimatedSendTime, isRetomado }) => {
+// --- COMPONENTES UI ---
+const ProgressBar = React.memo(({ estimatedSendTime, isRetomado }) => {
     const [remainingMinutes, setRemainingMinutes] = useState(0);
-    const [barClass, setBarClass] = useState('');
+    const [barClass, setBarClass] = useState('bg-green-500');
+
     useEffect(() => {
         const calculateTime = () => {
             const now = new Date();
             const diff = new Date(estimatedSendTime).getTime() - now.getTime();
-            const minutes = Math.ceil(diff / (1000 * 60));
+            const minutes = Math.ceil(diff / 60000);
             setRemainingMinutes(minutes > 0 ? minutes : 0);
+
             if (isRetomado) setBarClass('bg-pink-400 animate-pulse');
             else if (minutes <= 10) setBarClass('bg-red-500 animate-pulse');
             else if (minutes <= 15) setBarClass('bg-yellow-400');
@@ -35,13 +38,21 @@ const ProgressBar = ({ estimatedSendTime, isRetomado }) => {
         const interval = setInterval(calculateTime, 15000); 
         return () => clearInterval(interval);
     }, [estimatedSendTime, isRetomado]);
-    const progressPercentage = isRetomado ? (remainingMinutes / 5) * 100 : (remainingMinutes / 30) * 100;
-    return <div className="w-full bg-gray-200 rounded-full h-4 relative overflow-hidden"><div className={`h-4 rounded-full transition-all duration-500 ${barClass}`} style={{ width: `${Math.max(0, Math.min(100, progressPercentage))}%` }}></div><span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-black mix-blend-screen">{remainingMinutes > 0 ? `${remainingMinutes} min` : 'Atrasado'}</span></div>;
-};
+
+    const totalDuration = isRetomado ? 5 : 30; // 5 min para retomados, 30 para normais
+    const progressPercentage = (remainingMinutes / totalDuration) * 100;
+
+    return (
+        <div className="w-full bg-gray-200 rounded-full h-4 relative overflow-hidden">
+            <div className={`h-4 rounded-full transition-all duration-500 ${barClass}`} style={{ width: `${Math.max(0, Math.min(100, progressPercentage))}%` }}></div>
+            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-black mix-blend-screen">{remainingMinutes > 0 ? `${remainingMinutes} min` : 'Atrasado'}</span>
+        </div>
+    );
+});
 
 const PedidoCard = ({ pedido, onFinalizar, onRetomar, pizzaDetails, isHistory }) => {
-    const formatIngredients = (allIngredients) => {
-        if (!allIngredients) return [];
+    const formatIngredients = useCallback((allIngredients) => {
+        if (!allIngredients || !Array.isArray(allIngredients)) return [];
         const core = [], finalization = [], base = [];
         allIngredients.forEach(ing => {
             const lowerIng = ing.toLowerCase();
@@ -53,13 +64,37 @@ const PedidoCard = ({ pedido, onFinalizar, onRetomar, pizzaDetails, isHistory })
         });
         const sortedBase = base.sort((a, b) => (a.toLowerCase().includes('massa') ? -1 : b.toLowerCase().includes('massa') ? 1 : a.toLowerCase().includes('molho') ? -1 : b.toLowerCase().includes('molho') ? 1 : 0));
         return [...sortedBase, ...core, ...finalization];
-    };
+    }, []);
+
     const ingredients = pizzaDetails ? formatIngredients(pizzaDetails.ingredients) : [];
-    return <div className="bg-white rounded-xl shadow-lg flex flex-col relative p-4 pt-16 border-2 border-transparent hover:border-blue-300 transition-all duration-300"><div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 bg-gray-200 rounded-full overflow-hidden border-4 border-white shadow-md"><img src={pizzaDetails?.imageUrl || pedido.image} alt={pedido.pizzaName} className="w-full h-full object-cover" onError={(e) => { e.target.onerror = null; e.target.src=`https://placehold.co/400x300/296a9a/white?text=LaGRÉCIA`; }}/></div><div className="text-center text-xs font-semibold mb-2">{pedido.isRetomado ? 'RETOMADO' : `Enviar em: ${new Date(pedido.estimatedSendTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}</div><ProgressBar estimatedSendTime={pedido.estimatedSendTime} isRetomado={pedido.isRetomado} /><div className="flex-grow mt-4 text-center"><h3 className="font-bold text-lg text-gray-800">{pedido.pizzaName}</h3><p className="text-xs text-gray-500 mb-1">{pedido.isHalf ? 'Meia Pizza' : 'Pizza Inteira'}</p><p className="text-lg font-semibold text-[#296a9a] mb-2">R$ {pedido.price.toFixed(2).replace('.', ',')}</p><div className="text-left text-xs text-gray-600 my-2 max-h-20 overflow-y-auto pr-2"><p className="font-bold text-xs mb-1">Ingredientes:</p>{ingredients.length > 0 ? (<ol className="list-decimal list-inside">{ingredients.map((ing, i) => <li key={i}>{ing}</li>)}</ol>) : (<p>Carregando...</p>)}</div>{pedido.observation && (<div className="mt-2 text-left text-xs bg-yellow-100 p-2 rounded"><p className="font-bold">OBS:</p><p>{pedido.observation}</p></div>)}</div><div className="flex justify-between items-center mt-4 pt-2 border-t"><div className="flex items-center gap-1">{pedido.platform === 'ifood' ? <IFoodIcon /> : <AnotaAiIcon />}<span className="text-xs text-gray-400">#{pedido.displayId}</span></div>{isHistory ? (<button onClick={() => onRetomar(pedido)} className="bg-pink-500 text-white text-xs font-bold py-1 px-3 rounded-full hover:bg-pink-600 transition-colors">Retomar</button>) : (<button onClick={() => onFinalizar(pedido)} className="bg-[#296a9a] text-white text-xs font-bold py-1 px-3 rounded-full hover:bg-[#205074] transition-colors">Finalizar</button>)}</div></div>;
+    
+    return (
+        <div className="bg-white rounded-xl shadow-lg flex flex-col relative p-4 pt-16 border-2 border-transparent hover:border-blue-300 transition-all duration-300">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 bg-gray-100 rounded-full overflow-hidden border-4 border-white shadow-md flex items-center justify-center">
+                <span className="text-5xl text-gray-400 font-thin">X</span>
+            </div>
+            <div className="text-center text-xs font-semibold mb-2">{pedido.isRetomado ? 'RETOMADO' : `Enviar às ${new Date(pedido.estimatedSendTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}</div>
+            <ProgressBar estimatedSendTime={pedido.estimatedSendTime} isRetomado={pedido.isRetomado} />
+            <div className="flex-grow mt-4 text-center">
+                <h3 className="font-bold text-lg text-gray-800">{pedido.pizzaName}</h3>
+                <p className="text-xs text-gray-500 mb-1">{pedido.isHalf ? 'Meia Pizza' : 'Pizza Inteira'}</p>
+                <p className="text-lg font-semibold text-[#296a9a] mb-2">R$ {pedido.price.toFixed(2).replace('.', ',')}</p>
+                <div className="text-left text-xs text-gray-600 my-2 max-h-20 overflow-y-auto pr-2">
+                    <p className="font-bold text-xs mb-1">Ingredientes:</p>
+                    {ingredients.length > 0 ? (<ol className="list-decimal list-inside">{ingredients.map((ing, i) => <li key={i}>{ing}</li>)}</ol>) : (<p>Não disponíveis.</p>)}
+                </div>
+                {pedido.observation && (<div className="mt-2 text-left text-xs bg-yellow-100 p-2 rounded"><p className="font-bold">OBS:</p><p>{pedido.observation}</p></div>)}
+            </div>
+            <div className="flex justify-between items-center mt-4 pt-2 border-t">
+                <div className="flex items-center gap-1">{pedido.platform === 'ifood' ? <IFoodIcon /> : <AnotaAiIcon />}<span className="text-xs text-gray-400">#{pedido.displayId}</span></div>
+                {isHistory ? (<button onClick={() => onRetomar(pedido)} className="bg-pink-500 text-white text-xs font-bold py-1 px-3 rounded-full hover:bg-pink-600 transition-colors">Retomar</button>) : (<button onClick={() => onFinalizar(pedido)} className="bg-[#296a9a] text-white text-xs font-bold py-1 px-3 rounded-full hover:bg-[#205074] transition-colors">Finalizar</button>)}
+            </div>
+        </div>
+    );
 };
 
 const HistorySidebar = ({ history, isVisible }) => (isVisible && <div className="bg-gray-50 p-3 rounded-lg shadow-inner h-full overflow-y-auto"><h3 className="text-sm font-bold mb-2 text-gray-600">IDs Histórico</h3><ul className="space-y-1">{[...history].reverse().map(p => <li key={p.id} className="text-xs text-gray-500 bg-white p-1 rounded text-center">#{p.displayId}</li>)}</ul></div>);
-const MenuCard = ({ pizza, onAdd }) => <div className="bg-white rounded-xl shadow-lg flex flex-col relative p-4 pt-16 border-2 border-transparent hover:border-blue-300 transition-all duration-300 items-center"><div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 bg-gray-200 rounded-full overflow-hidden border-4 border-white shadow-md"><img src={pizza.imageUrl} alt={pizza.name} className="w-full h-full object-cover" onError={(e) => { e.target.onerror = null; e.target.src=`https://placehold.co/400x300/296a9a/white?text=${pizza.name.replace(' ', '+')}`; }} /></div><h3 className="font-bold text-lg text-gray-800 mt-4 text-center">{pizza.name}</h3><p className="text-xs text-gray-600 text-center flex-grow my-2 px-2">{pizza.ingredients.join(', ')}</p><button onClick={() => onAdd(pizza)} className="mt-auto bg-green-500 text-white text-xs font-bold py-1 px-4 rounded-full hover:bg-green-600 transition-colors">Adicionar</button></div>;
+const MenuCard = ({ pizza, onAdd }) => <div className="bg-white rounded-xl shadow-lg flex flex-col relative p-4 pt-16 border-2 border-transparent hover:border-blue-300 transition-all duration-300 items-center"><div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 bg-gray-100 rounded-full overflow-hidden border-4 border-white shadow-md flex items-center justify-center"><span className="text-5xl text-gray-400 font-thin">X</span></div><h3 className="font-bold text-lg text-gray-800 mt-4 text-center">{pizza.name}</h3><p className="text-xs text-gray-600 text-center flex-grow my-2 px-2">{pizza.ingredients.join(', ')}</p><button onClick={() => onAdd(pizza)} className="mt-auto bg-green-500 text-white text-xs font-bold py-1 px-4 rounded-full hover:bg-green-600 transition-colors">Adicionar</button></div>;
 
 // --- LÓGICA DE NORMALIZAÇÃO DE DADOS ---
 const normalizeAnotaAiOrder = (apiResponse) => {
@@ -99,7 +134,7 @@ export default function App() {
             const rows = tsvText.split('\n').slice(1);
             const pizzaMenu = rows.map(row => {
                 const [name, ingredients, imageUrl] = row.split('\t');
-                return { name, ingredients: ingredients ? ingredients.split(',').map(i => i.trim()) : [], imageUrl };
+                return { name, ingredients: ingredients ? ingredients.split(',').map(i => i.trim()) : [], imageUrl: imageUrl };
             });
             setMenu(pizzaMenu);
         } catch (error) { console.error("Falha ao buscar o menu:", error); }
@@ -107,40 +142,23 @@ export default function App() {
 
     useEffect(() => {
         fetchMenu();
-        // Conexão em tempo real com o servidor de Webhook
-        console.log("Tentando conectar ao servidor de eventos:", `${WEBHOOK_SERVER_URL}/events`);
+        if (!WEBHOOK_SERVER_URL) {
+            console.error("URL do Servidor de Webhook não está definida!");
+            return;
+        }
         const eventSource = new EventSource(`${WEBHOOK_SERVER_URL}/events`);
-        
-        eventSource.onopen = () => {
-            console.log("Conexão com o servidor de pedidos estabelecida.");
-        };
-        
+        eventSource.onopen = () => console.log("Conectado ao servidor de pedidos em tempo real.");
         eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            if (data.message) { // Ignora mensagens de status
-                console.log("Mensagem do servidor:", data.message);
-                return;
-            }
-            
-            console.log("Novo pedido recebido via webhook:", data);
+            if (data.message) { console.log("Mensagem do servidor:", data.message); return; }
             const pedidoNormalizado = processIncomingOrder(data);
             if (pedidoNormalizado) {
-                setPedidos(prev => [...prev, pedidoNormalizado].sort((a, b) => new Date(a.estimatedSendTime) - new Date(b.estimatedSendTime)));
+                setPedidos(prev => [...prev.filter(p => p.id !== pedidoNormalizado.id), pedidoNormalizado].sort((a, b) => new Date(a.estimatedSendTime) - new Date(b.estimatedSendTime)));
             }
         };
-
-        eventSource.onerror = (err) => {
-            console.error("Erro na conexão com o servidor de eventos:", err);
-            eventSource.close();
-        };
-
-        // Reordena a lista periodicamente
+        eventSource.onerror = () => { console.error("Erro na conexão com o servidor de eventos."); eventSource.close(); };
         const interval = setInterval(() => setPedidos(prev => [...prev].sort((a, b) => new Date(a.estimatedSendTime) - new Date(b.estimatedSendTime))), 10000);
-        
-        return () => {
-            clearInterval(interval);
-            eventSource.close();
-        };
+        return () => { clearInterval(interval); eventSource.close(); };
     }, [fetchMenu]);
 
     const getPizzaDetails = (pizzaName) => menu.find(p => p.name.toLowerCase() === pizzaName.toLowerCase());
